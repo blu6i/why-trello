@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-require __DIR__ . '/../vendor/autoload.php';
+require __DIR__.'/../vendor/autoload.php';
 
 use App\Database;
 
@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['note'])) {
         $pdo = Database::connect();
         $stmt = $pdo->prepare('INSERT INTO demo (note) VALUES (:note)');
         $stmt->execute(['note' => (string) $_POST['note']]);
-    } catch (\Throwable $e) {
+    } catch (Throwable $e) {
         // Ошибка подключения/записи — статус БД и так будет виден на странице ниже
     }
     header('Location: /');
@@ -32,7 +32,7 @@ try {
     $pdo = Database::connect();
     $dbVersion = (string) $pdo->query('SELECT version()')->fetchColumn();
     $rows = $pdo->query('SELECT id, created_at, note FROM demo ORDER BY id DESC')->fetchAll();
-} catch (\Throwable $e) {
+} catch (Throwable $e) {
     $dbError = $e->getMessage();
 }
 
@@ -80,25 +80,25 @@ function h(string $value): string
 
         <dt>Подключение к БД</dt>
         <dd class="<?= $dbError === null ? 'ok' : 'fail' ?>">
-            <?= $dbError === null ? h($dbVersion ?? '') : 'ошибка: ' . h($dbError) ?>
+            <?= $dbError === null ? h($dbVersion ?? '') : 'ошибка: '.h($dbError) ?>
         </dd>
     </dl>
 
     <h2>Таблица demo</h2>
-    <?php if ($rows): ?>
+    <?php if ($rows) { ?>
         <table>
             <tr><th>id</th><th>создано</th><th>note</th></tr>
-            <?php foreach ($rows as $row): ?>
+            <?php foreach ($rows as $row) { ?>
                 <tr>
                     <td><?= h((string) $row['id']) ?></td>
                     <td><?= h((string) $row['created_at']) ?></td>
                     <td><?= h((string) $row['note']) ?></td>
                 </tr>
-            <?php endforeach; ?>
+            <?php } ?>
         </table>
-    <?php else: ?>
+    <?php } else { ?>
         <p>Нет данных (таблица пуста или БД недоступна).</p>
-    <?php endif; ?>
+    <?php } ?>
 
     <form method="post" action="/">
         <input type="text" name="note" placeholder="Новая запись" required maxlength="500">

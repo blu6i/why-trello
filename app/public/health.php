@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-require __DIR__ . '/../vendor/autoload.php';
+require __DIR__.'/../vendor/autoload.php';
 
 use App\Database;
 
@@ -16,7 +16,7 @@ $httpStatus = 200;
 
 try {
     Database::connect()->query('SELECT 1');
-} catch (\Throwable $e) {
+} catch (Throwable $e) {
     $checks['database'] = 'fail';
     $httpStatus = 503;
 }
