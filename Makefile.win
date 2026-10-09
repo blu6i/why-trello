@@ -1,0 +1,52 @@
+# Учебное окружение: nginx + php-fpm + PostgreSQL (Windows / MinGW Make)
+
+ifneq (,$(wildcard .env))
+include .env
+export
+endif
+
+.DEFAULT_GOAL := help
+.PHONY: help init build up down ps logs clean composer sh psql
+
+help:
+	@echo make -f Makefile.win init      — создать .env из .env.example
+	@echo make -f Makefile.win build     — собрать образы
+	@echo make -f Makefile.win up        — поднять контейнеры (в фоне)
+	@echo make -f Makefile.win down      — остановить и удалить контейнеры
+	@echo make -f Makefile.win ps        — статус контейнеров
+	@echo make -f Makefile.win logs      — логи всех сервисов (follow)
+	@echo make -f Makefile.win clean     — down -v: удалить volume pgdata (данные будут потеряны)
+	@echo make -f Makefile.win composer  — composer install внутри php (без ошибок прав на Windows)
+	@echo make -f Makefile.win sh        — shell в php-контейнере
+	@echo make -f Makefile.win psql      — консоль psql к postgres
+
+init:
+	@if not exist .env ( copy .env.example .env && echo .env создан ) else ( echo .env уже существует, пропускаю )
+
+build:
+	docker compose build
+
+up:
+	docker compose up -d
+
+down:
+	docker compose down
+
+ps:
+	docker compose ps
+
+logs:
+	docker compose logs -f
+
+clean:
+	docker compose down -v
+
+# На Windows запускаем без -u www-data, чтобы избежать ошибки "touch(): Utime failed: Operation not permitted" на NTFS
+composer:
+	docker compose exec php composer install
+
+sh:
+	docker compose exec php sh
+
+psql:
+	docker compose exec postgres psql -U $(POSTGRES_USER) -d $(POSTGRES_DB)
