@@ -28,15 +28,16 @@ final class Database
     //         PDO::ATTR_TIMEOUT => 3,
     //     ]);
     // }
-    private static bool $booted = false;
+    private static ?Capsule $capsule = null;
 
-    public static function init(): void
+    public static function init(): Capsule
     {
-        if (self::$booted) {
-            return;
+        if (self::$capsule !== null) {
+            return self::$capsule;
         }
-        $capsule = new Capsule;
-        $capsule->addConnection([
+
+        self::$capsule = new Capsule;
+        self::$capsule->addConnection([
             'driver' => 'pgsql',
             'host' => getenv('DB_HOST') ?: 'postgres',
             'port' => getenv('DB_PORT') ?: '5432',
@@ -54,10 +55,11 @@ final class Database
             ],
         ]);
 
-        $capsule->setEventDispatcher(new Dispatcher(new Container));
-        $capsule->setAsGlobal();
-        $capsule->bootEloquent();
-        self::$booted = true;
+        self::$capsule->setEventDispatcher(new Dispatcher(new Container));
+        self::$capsule->setAsGlobal();
+        self::$capsule->bootEloquent();
+
+        return self::$capsule;
     }
 
     public static function connect(): PDO
