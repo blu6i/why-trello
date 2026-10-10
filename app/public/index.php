@@ -6,6 +6,7 @@ require __DIR__.'/../vendor/autoload.php';
 
 use App\Database;
 use App\Log;
+use App\Models\ActivityLog;
 use App\Models\Demo;
 use Illuminate\Database\Capsule\Manager as Capsule;
 
@@ -42,7 +43,14 @@ if ($method === 'POST' && isset($_POST['note'])) {
         // $pdo = Database::connect();
         // $stmt = $pdo->prepare('INSERT INTO demo (note) VALUES (:note)');
         // $stmt->execute(['note' => (string) $_POST['note']]);
-        Demo::create(['note' => (string) $_POST['note']]);
+        $demo = Demo::create(['note' => (string) $_POST['note']]);
+
+        ActivityLog::create([
+            'entity_type' => 'demo',
+            'entity_id' => $demo->id,
+            'action' => 'created',
+            'payload' => ['note' => $demo->note],
+        ]);
     } catch (Throwable $e) {
         // Ошибка подключения/записи — статус БД и так будет виден на странице ниже
     }
@@ -61,6 +69,7 @@ $rows = [];
 try {
     $dbVersion = (string) Capsule::connection()->selectOne('SELECT version()')->version;
     $rows = Demo::orderBy('id', 'desc')->get();
+    $activityLogs = ActivityLog::orderBy('id', 'desc')->take(10)->get();
 } catch (Throwable $e) {
     $dbError = $e->getMessage();
 }
@@ -133,6 +142,24 @@ function h(string $value): string
         <input type="text" name="note" placeholder="Новая запись" required maxlength="500">
         <button type="submit">Добавить</button>
     </form>
+
+    <h2>История операций</h2>
+    <?php if (count($activityLogs) > 0) { ?>
+        <table>
+            <tr><th>ID</th><th>Сущность</th><th>Действие</th><th>Данные (JSON)</th><th>Время</th></tr>
+            <?php foreach ($activityLogs as $log) { ?>
+                <tr>
+                    <td><?= h((string) $log->id) ?></td>
+                    <td><?= h($log->entity_type.' #'.$log->entity_id) ?></td>
+                    <td><?= h($log->action) ?></td>
+                    <td><code><?= h(json_encode($log->payload, JSON_UNESCAPED_UNICODE)) ?></code></td>
+                    <td><?= h((string) $log->created_at) ?></td>
+                </tr>
+            <?php } ?>
+        </table>
+    <?php } else { ?>
+        <p>История пуста.</p>
+    <?php } ?>
 </body>
 </html>
 
