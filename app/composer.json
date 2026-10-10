@@ -1,5 +1,5 @@
 {
-    "name": "devops-course/app",
+    "name": "why-trello/app",
     "description": "Учебное приложение: nginx + php-fpm + PostgreSQL",
     "type": "project",
     "require": {

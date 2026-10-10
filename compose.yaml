@@ -4,7 +4,7 @@ services:
       context: ./docker/nginx
     # build + image одновременно: собирается локально, но с тем же тегом,
     # под которым образ будет виден в `docker images` (пригодится и для CI)
-    image: ${DOCKERHUB_NAMESPACE}/devops-course-nginx:${IMAGE_TAG}
+    image: ${DOCKERHUB_NAMESPACE}/nginx:${IMAGE_TAG}
     ports:
       - "127.0.0.1:${NGINX_PORT:-8080}:80"
     volumes:
@@ -28,7 +28,7 @@ services:
       args:
         UID: ${UID:-1000}
         GID: ${GID:-1000}
-    image: ${DOCKERHUB_NAMESPACE}/devops-course-php:${IMAGE_TAG}
+    image: ${DOCKERHUB_NAMESPACE}/php:${IMAGE_TAG}
     volumes:
       # Без :ro — сюда пишет composer install (vendor/)
       - ./app:/var/www/html
@@ -55,7 +55,7 @@ services:
   postgres:
     build:
       context: ./docker/postgres
-    image: ${DOCKERHUB_NAMESPACE}/devops-course-postgres:${IMAGE_TAG}
+    image: ${DOCKERHUB_NAMESPACE}/postgres:${IMAGE_TAG}
     # Свой конфиг вместо дефолтного $PGDATA/postgresql.conf
     command: postgres -c config_file=/etc/postgresql/postgresql.conf
     environment:
