@@ -5,14 +5,44 @@ declare(strict_types=1);
 require __DIR__.'/../vendor/autoload.php';
 
 use App\Database;
+use App\Log;
+use App\Models\Demo;
+use Illuminate\Database\Capsule\Manager as Capsule;
+
+$startTime = microtime(true);
+$method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+$uri = $_SERVER['REQUEST_URI'] ?? '/';
+
+ob_start();
+
+register_shutdown_function(function () use ($startTime, $method, $uri) {
+    // Забираем сгенерированный HTML из буфера
+    $responseBody = ob_get_clean();
+    $status = http_response_code();
+    $durationMs = round((microtime(true) - $startTime) * 1000, 2);
+    // Логируем в Monolog со всеми деталями
+    Log::get()->info("HTTP Request: {$method} {$uri} -> {$status}", [
+        'method' => $method,
+        'uri' => $uri,
+        'status' => $status,
+        'duration_ms' => $durationMs,
+        'response_body' => $responseBody ?: '(empty body/redirect)',
+        'ip' => $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1',
+    ]);
+    // Отправляем тело клиенту в браузер
+    echo $responseBody;
+});
+
+Database::init();
 
 // Обработка формы добавления записи. Редиректим после POST (Post/Redirect/Get),
 // чтобы повторная отправка формы не происходила при обновлении страницы
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['note'])) {
+if ($method === 'POST' && isset($_POST['note'])) {
     try {
-        $pdo = Database::connect();
-        $stmt = $pdo->prepare('INSERT INTO demo (note) VALUES (:note)');
-        $stmt->execute(['note' => (string) $_POST['note']]);
+        // $pdo = Database::connect();
+        // $stmt = $pdo->prepare('INSERT INTO demo (note) VALUES (:note)');
+        // $stmt->execute(['note' => (string) $_POST['note']]);
+        Demo::create(['note' => (string) $_POST['note']]);
     } catch (Throwable $e) {
         // Ошибка подключения/записи — статус БД и так будет виден на странице ниже
     }
@@ -29,9 +59,8 @@ $dbError = null;
 $rows = [];
 
 try {
-    $pdo = Database::connect();
-    $dbVersion = (string) $pdo->query('SELECT version()')->fetchColumn();
-    $rows = $pdo->query('SELECT id, created_at, note FROM demo ORDER BY id DESC')->fetchAll();
+    $dbVersion = (string) Capsule::connection()->selectOne('SELECT version()')->version;
+    $rows = Demo::orderBy('id', 'desc')->get();
 } catch (Throwable $e) {
     $dbError = $e->getMessage();
 }
@@ -85,7 +114,7 @@ function h(string $value): string
     </dl>
 
     <h2>Таблица demo</h2>
-    <?php if ($rows) { ?>
+    <?php if (count($rows) > 0) { ?>
         <table>
             <tr><th>id</th><th>создано</th><th>note</th></tr>
             <?php foreach ($rows as $row) { ?>
@@ -106,3 +135,5 @@ function h(string $value): string
     </form>
 </body>
 </html>
+
+<!-- $responseBody = ob_get_clean(); -->

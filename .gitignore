@@ -22,3 +22,4 @@
 
 .agents/
 .env
+*.log
