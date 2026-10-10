@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App;
 
-// use PDO;
 use Illuminate\Container\Container;
 use Illuminate\Database\Capsule\Manager as Capsule;
 use Illuminate\Events\Dispatcher;
+use PDO;
 
 final class Database
 {
@@ -45,11 +45,25 @@ final class Database
             'password' => getenv('DB_PASSWORD') ?: 'admin',
             'charset' => 'utf8',
             'prefix' => '',
-            'schema' => 'global',
+            'schema' => 'public',
+            'options' => [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                // Не ждём дольше 3 секунд, если БД недоступна
+                PDO::ATTR_TIMEOUT => 3,
+            ],
         ]);
+
         $capsule->setEventDispatcher(new Dispatcher(new Container));
         $capsule->setAsGlobal();
         $capsule->bootEloquent();
         self::$booted = true;
+    }
+
+    public static function connect(): PDO
+    {
+        self::init();
+
+        return Capsule::connection()->getPdo();
     }
 }
