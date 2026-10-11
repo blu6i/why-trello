@@ -24,6 +24,7 @@ help:
 	@echo make migrate   — запуск миграций
 	@echo make encrypt   — шифрование
 	@echo make decrypt   — дешифрование
+	@echo make tables_db — таблицы в бд
 
 init:
 	@if not exist .env ( copy .env.example .env && echo .env создан ) else ( echo .env уже существует, пропускаю )
@@ -73,3 +74,6 @@ encrypt:
 
 decrypt:
 	@docker compose exec php php bin/decrypt.php "$(val)"
+
+tables_db:
+	docker compose exec postgres psql -U admin -d app -c "\dt"

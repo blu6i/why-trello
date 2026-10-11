@@ -9,7 +9,7 @@ return [
         'port' => 5432,
         'database' => 'app',
         'username' => 'admin',
-        'password' => 'ENC:eyJpdiI6Ijl5aW04MW9JMXVBXC9KMTRSOGNycVZ3PT0iLCJ2YWx1ZSI6ImlQdkU4UThVZldUVDZ4K2VVQ2ZJd3hsUVNTSWVpY2hrR2o2MGdxVmRYNkk9IiwibWFjIjoiYWE5NzhmMjI3NGI0Y2FkYmFlMjIyZDAxZDRkZjE0OWFiM2RjOTM4ZWNjMDU4NjYzOGY3MmRiN2NmOTA3MjJmMiJ9',
+        'password' => 'ENC:eyJpdiI6Ik85T1NMWnR6NTl5b2pqVU9zTUFpMUE9PSIsInZhbHVlIjoiQ1dCVG1TbXdkZUZOaWhSRE1CaGZjQT09IiwibWFjIjoiNjM5ZjhlNWI5OGFiY2IzNjdmYjAyNjUzMzRiMTRjOTk3M2NmZjIxY2FiZmQwOTM4ODA1ZTRmOGM4NmUxMzc3NSJ9',
         'charset' => 'utf8',
         'schema' => 'public',
     ],
