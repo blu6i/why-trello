@@ -14,10 +14,12 @@ class ActivityLog extends Model
         'entity_type',
         'entity_id',
         'action',
-        'payload',
+        'old_values',
+        'new_values',
     ];
 
     protected $casts = [
-        'payload' => 'array',
+        'old_values' => 'array',
+        'new_values' => 'array',
     ];
 }
