@@ -22,6 +22,8 @@ help:
 	@echo make sh        — shell в php-контейнере
 	@echo make psql      — консоль psql к postgres
 	@echo make migrate   — запуск миграций
+	@echo make encrypt   — шифрование
+	@echo make decrypt   — дешифрование
 
 init:
 	@if not exist .env ( copy .env.example .env && echo .env создан ) else ( echo .env уже существует, пропускаю )
@@ -65,3 +67,9 @@ pint-test:
 # Миграции базы данных
 migrate:
 	docker compose exec php php bin/migrate.php
+
+encrypt:
+	@docker compose exec php php bin/encrypt.php "$(val)"
+
+decrypt:
+	@docker compose exec php php bin/decrypt.php "$(val)"

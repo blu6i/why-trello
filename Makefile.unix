@@ -23,6 +23,8 @@ help:
 	@echo "make pint-test — проверка стиля кода без исправлений (--test)"
 	@echo "make sh        — shell в php-контейнере"
 	@echo "make psql      — консоль psql к postgres"
+	@echo make encrypt    — шифрование
+	@echo make decrypt    — дешифрование
 
 # Создаёт .env из примера и подставляет реальные UID/GID текущего пользователя,
 # чтобы файлы, которые php-fpm пишет в bind mount (например app/vendor), на Linux-хосте
@@ -76,3 +78,9 @@ pint:
 # Проверка стиля кода без внесения изменений
 pint-test:
 	docker compose exec php ./vendor/bin/pint --test
+
+encrypt:
+	@docker compose exec php php bin/encrypt.php "$(val)"
+
+decrypt:
+	@docker compose exec php php bin/decrypt.php "$(val)"
