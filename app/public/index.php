@@ -7,7 +7,6 @@ require __DIR__.'/../vendor/autoload.php';
 use App\Database;
 use App\Log;
 use App\Models\ActivityLog;
-use App\Models\Demo;
 use Illuminate\Database\Capsule\Manager as Capsule;
 
 $startTime = microtime(true);
@@ -36,40 +35,17 @@ register_shutdown_function(function () use ($startTime, $method, $uri) {
 
 Database::init();
 
-// Обработка формы добавления записи. Редиректим после POST (Post/Redirect/Get),
-// чтобы повторная отправка формы не происходила при обновлении страницы
-if ($method === 'POST' && isset($_POST['note'])) {
-    try {
-        // $pdo = Database::connect();
-        // $stmt = $pdo->prepare('INSERT INTO demo (note) VALUES (:note)');
-        // $stmt->execute(['note' => (string) $_POST['note']]);
-        $demo = Demo::create(['note' => (string) $_POST['note']]);
-
-        ActivityLog::create([
-            'entity_type' => 'demo',
-            'entity_id' => $demo->id,
-            'action' => 'created',
-            'payload' => ['note' => $demo->note],
-        ]);
-    } catch (Throwable $e) {
-        // Ошибка подключения/записи — статус БД и так будет виден на странице ниже
-    }
-    header('Location: /');
-    exit;
-}
-
 $phpVersion = PHP_VERSION;
 $hasPdoPgsql = extension_loaded('pdo_pgsql');
 $hostname = gethostname();
 
 $dbVersion = null;
 $dbError = null;
-$rows = [];
+$activityLogs = [];
 
 try {
     $dbVersion = (string) Capsule::connection()->selectOne('SELECT version()')->version;
-    $rows = Demo::orderBy('id', 'desc')->get();
-    $activityLogs = ActivityLog::orderBy('id', 'desc')->take(10)->get();
+    $activityLogs = ActivityLog::orderBy('id', 'desc')->take(20)->get();
 } catch (Throwable $e) {
     $dbError = $e->getMessage();
 }
@@ -84,9 +60,9 @@ function h(string $value): string
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>nginx + php-fpm + PostgreSQL</title>
+    <title>why-trello</title>
     <style>
-        body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #1c1c1c; }
+        body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; color: #1c1c1c; }
         h1 { font-size: 1.4rem; }
         h2 { font-size: 1.1rem; margin-top: 2rem; }
         dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.3rem 1rem; background: #f6f6f6; padding: 1rem; border-radius: 6px; }
@@ -95,16 +71,13 @@ function h(string $value): string
         .ok { color: #0a7a2f; }
         .fail { color: #b00020; }
         table { border-collapse: collapse; width: 100%; margin: 0.5rem 0 1rem; }
-        th, td { border: 1px solid #ddd; padding: 0.4rem 0.6rem; text-align: left; font-size: 0.9rem; }
+        th, td { border: 1px solid #ddd; padding: 0.4rem 0.6rem; text-align: left; font-size: 0.85rem; vertical-align: top; }
         th { background: #f0f0f0; }
-        form { display: flex; gap: 0.5rem; }
-        input[type=text] { flex: 1; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; }
-        button { padding: 0.5rem 1.2rem; border: 0; border-radius: 4px; background: #2563eb; color: #fff; cursor: pointer; }
-        button:hover { background: #1d4ed8; }
+        code { font-family: monospace; font-size: 0.8rem; background: #f8fafc; padding: 2px 4px; border-radius: 3px; display: block; white-space: pre-wrap; word-break: break-all; }
     </style>
 </head>
 <body>
-    <h1>nginx + php-fpm + PostgreSQL</h1>
+    <h1>why-trello</h1>
 
     <dl>
         <dt>Версия PHP</dt>
@@ -122,43 +95,30 @@ function h(string $value): string
         </dd>
     </dl>
 
-    <h2>Таблица demo</h2>
-    <?php if (count($rows) > 0) { ?>
-        <table>
-            <tr><th>id</th><th>создано</th><th>note</th></tr>
-            <?php foreach ($rows as $row) { ?>
-                <tr>
-                    <td><?= h((string) $row['id']) ?></td>
-                    <td><?= h((string) $row['created_at']) ?></td>
-                    <td><?= h((string) $row['note']) ?></td>
-                </tr>
-            <?php } ?>
-        </table>
-    <?php } else { ?>
-        <p>Нет данных (таблица пуста или БД недоступна).</p>
-    <?php } ?>
-
-    <form method="post" action="/">
-        <input type="text" name="note" placeholder="Новая запись" required maxlength="500">
-        <button type="submit">Добавить</button>
-    </form>
-
-    <h2>История операций</h2>
+    <h2>Журнал аудита базы данных (activity_logs)</h2>
     <?php if (count($activityLogs) > 0) { ?>
         <table>
-            <tr><th>ID</th><th>Сущность</th><th>Действие</th><th>Данные (JSON)</th><th>Время</th></tr>
+            <tr>
+                <th>ID</th>
+                <th>Сущность</th>
+                <th>Действие</th>
+                <th>ДО (old_values)</th>
+                <th>ПОСЛЕ (new_values)</th>
+                <th>Время</th>
+            </tr>
             <?php foreach ($activityLogs as $log) { ?>
                 <tr>
                     <td><?= h((string) $log->id) ?></td>
-                    <td><?= h($log->entity_type.' #'.$log->entity_id) ?></td>
+                    <td><?= h($log->entity_type.' #'.($log->entity_id ?? '')) ?></td>
                     <td><?= h($log->action) ?></td>
-                    <td><code><?= h(json_encode($log->payload, JSON_UNESCAPED_UNICODE)) ?></code></td>
+                    <td><code><?= h(json_encode($log->old_values, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?: 'null') ?></code></td>
+                    <td><code><?= h(json_encode($log->new_values, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?: 'null') ?></code></td>
                     <td><?= h((string) $log->created_at) ?></td>
                 </tr>
             <?php } ?>
         </table>
     <?php } else { ?>
-        <p>История пуста.</p>
+        <p>Записей аудита пока нет.</p>
     <?php } ?>
 </body>
 </html>
