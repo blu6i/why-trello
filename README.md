@@ -7,7 +7,7 @@
 ## Быстрый старт
 
 ```bash
-make init && make up && make composer
+make init && make up && make composer && make migrate
 ```
 
 - `make init` создаёт `.env` из `.env.example` и подставляет в него UID/GID
@@ -15,6 +15,8 @@ make init && make up && make composer
   на хосте принадлежали вам, а не root).
 - `make up` собирает (если ещё не собраны) и поднимает контейнеры.
 - `make composer` ставит зависимости приложения в `app/vendor/`.
+- `make migrate` применяет миграции базы данных (создаёт таблицы `users`,
+  `boards`, `board_columns`, `cards`, индексы и триггеры аудита).
 
 После этого:
 
@@ -24,6 +26,22 @@ make init && make up && make composer
   (логин/пароль/база — из `.env`), либо `make psql` для консоли.
 
 Остальные команды — в `make help`.
+
+## Миграции базы данных
+
+Для версионирования схемы базы данных используется встроенный Eloquent Migrator. Файлы миграций располагаются в `app/database/migrations/`.
+
+- **Применить все новые миграции:**
+  ```bash
+  make migrate
+  ```
+  Команда находит неприменённые файлы миграций, запускает их внутри PHP-контейнера и записывает батч в системную таблицу `migrations`.
+
+- **Шифрование секретов в конфигах:**
+  ```bash
+  make encrypt val="секретная_строка"
+  make decrypt val="ENC:..."
+  ```
 
 ## Когда пересобирать, а когда достаточно F5 или restart
 
@@ -38,20 +56,6 @@ make init && make up && make composer
 - **Правки в `Dockerfile` или `app/composer.json`** (новое системное
   расширение PHP, системный пакет, PHP-зависимость) — нужен `make build`,
   затем `make up` (и `make composer`, если менялся `composer.json`).
-
-## Ловушка: initdb выполняется только один раз
-
-`docker/postgres/initdb/*.sql` применяется исключительно при инициализации
-**пустого** тома `pgdata` — то есть один раз, при самом первом старте. Если
-окружение уже поднималось и вы правите `01-init.sql`, он не выполнится
-повторно сам по себе. Чтобы применить изменения — снести том и поднять
-заново:
-
-```bash
-make clean && make up
-```
-
-Это удалит все данные в PostgreSQL.
 
 ## Linux / macOS / Windows (WSL2)
 
