@@ -1,5 +1,7 @@
-# Учебное окружение: nginx + php-fpm + PostgreSQL (Windows / MinGW Make)
+# Учебное окружение: nginx + php-fpm + PostgreSQL
 
+# Подтягиваем .env как переменные make (нужно, например, для `make psql`).
+# Docker Compose сам читает .env для подстановки в compose.yaml — это отдельно, для Makefile.
 ifneq (,$(wildcard .env))
 include .env
 export
@@ -9,25 +11,38 @@ endif
 .PHONY: help init build up down ps logs clean composer sh psql pint pint-test
 
 help:
-	@echo make init      — создать .env из .env.example
-	@echo make build     — собрать образы
-	@echo make up        — поднять контейнеры (в фоне)
-	@echo make down      — остановить и удалить контейнеры
-	@echo make ps        — статус контейнеров
-	@echo make logs      — логи всех сервисов (follow)
-	@echo make clean     — down -v: удалить volume pgdata (данные будут потеряны)
-	@echo make composer  — composer install внутри php (без ошибок прав на Windows)
-	@echo make pint      — автоформатирование кода (Laravel Pint)
-	@echo make pint-test — проверка стиля кода без исправлений (--test)
-	@echo make sh        — shell в php-контейнере
-	@echo make psql      — консоль psql к postgres
-	@echo make migrate   — запуск миграций
-	@echo make encrypt   — шифрование
-	@echo make decrypt   — дешифрование
-	@echo make tables_db — таблицы в бд
+	@echo "make init      — создать .env из .env.example (с UID/GID текущего пользователя)"
+	@echo "make build     — собрать образы"
+	@echo "make up        — поднять контейнеры (в фоне)"
+	@echo "make down      — остановить и удалить контейнеры"
+	@echo "make ps        — статус контейнеров"
+	@echo "make logs      — логи всех сервисов (follow)"
+	@echo "make clean     — down -v: остановить и удалить volume pgdata (данные будут потеряны)"
+	@echo "make composer  — composer install внутри php-контейнера"
+	@echo "make pint      — автоформатирование кода (Laravel Pint)"
+	@echo "make pint-test — проверка стиля кода без исправлений (--test)"
+	@echo "make sh        — shell в php-контейнере"
+	@echo "make psql      — консоль psql к postgres"
+	@echo "make migrate   — запуск миграций"
+	@echo "make encrypt   — шифрование"
+	@echo "make decrypt   — дешифрование"
+	@echo "make tables_db — таблицы в бд"
 
+# Создаёт .env из примера и подставляет реальные UID/GID текущего пользователя,
+# чтобы файлы, которые php-fpm пишет в bind mount (например app/vendor), на Linux-хосте
+# принадлежали не root/произвольному системному uid, а текущему пользователю
 init:
-	@if not exist .env ( copy .env.example .env && echo .env создан ) else ( echo .env уже существует, пропускаю )
+	@if [ -f .env ]; then \
+		echo ".env уже существует, пропускаю"; \
+	else \
+		cp .env.example .env; \
+		CURRENT_UID=$$(id -u); \
+		CURRENT_GID=$$(id -g); \
+		sed -i.bak "s/^UID=.*/UID=$$CURRENT_UID/" .env; \
+		sed -i.bak "s/^GID=.*/GID=$$CURRENT_GID/" .env; \
+		rm -f .env.bak; \
+		echo ".env создан (UID=$$CURRENT_UID, GID=$$CURRENT_GID)"; \
+	fi
 
 build:
 	docker compose build
@@ -47,9 +62,10 @@ logs:
 clean:
 	docker compose down -v
 
-# На Windows запускаем без -u www-data, чтобы избежать ошибки "touch(): Utime failed: Operation not permitted" на NTFS
+# Ставим зависимости от имени www-data — тогда vendor/ на хосте получит
+# владельца из UID/GID, заданных при `make init`, а не root
 composer:
-	docker compose exec php composer install
+	docker compose exec -u www-data php composer install
 
 sh:
 	docker compose exec php sh
@@ -57,17 +73,13 @@ sh:
 psql:
 	docker compose exec postgres psql -U $(POSTGRES_USER) -d $(POSTGRES_DB)
 
-# Автоформатирование кода (Laravel Pint)
+# Автоформатирование кода по стандартам PSR-12 / PER-CS
 pint:
 	docker compose exec php ./vendor/bin/pint
 
-# Проверка стиля кода без внесения изменений (--test)
+# Проверка стиля кода без внесения изменений
 pint-test:
 	docker compose exec php ./vendor/bin/pint --test
-
-# Миграции базы данных
-migrate:
-	docker compose exec php php bin/migrate.php
 
 encrypt:
 	@docker compose exec php php bin/encrypt.php "$(val)"
@@ -77,3 +89,6 @@ decrypt:
 
 tables_db:
 	docker compose exec postgres psql -U admin -d app -c "\dt"
+
+migrate:
+	docker compose exec php php bin/migrate.php
