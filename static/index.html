@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>О проекте why-trello</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <main class="container">
+        <h1>why-trello</h1>
+        <p class="lead">
+            Простой стек для практики Docker Compose: Nginx как веб-сервер и реверс-прокси к PHP-FPM 8.5 (чистый PHP, без фреймворков), PostgreSQL 18 как база данных. Все три образа собираются локально из Dockerfile.
+        </p>
+
+        <button type="button" id="toggleBtn" class="toggle-btn" aria-expanded="false" aria-controls="detailsBlock">
+            Подробнее о проекте
+        </button>
+
+        <section id="detailsBlock" class="details hidden">
+            <h2>Компоненты стека</h2>
+            <p>Проект построен на изолированных сервисах, управляемых через Docker Compose:</p>
+            <ul>
+                <li><strong>Nginx:</strong> реверс-прокси, отдача статики и перенаправление запросов на FastCGI.</li>
+                <li><strong>PHP-FPM 8.5:</strong> окружение исполнения с поддержкой расширений для работы с PostgreSQL (pdo_pgsql).</li>
+                <li><strong>PostgreSQL 18:</strong> реляционная СУБД с настроенной схемой и миграциями данных.</li>
+            </ul>
+        </section>
+    </main>
+
+    <script>
+        const btn = document.getElementById('toggleBtn');
+        const details = document.getElementById('detailsBlock');
+
+        btn.addEventListener('click', () => {
+            const isHidden = details.classList.toggle('hidden');
+            btn.setAttribute('aria-expanded', !isHidden);
+            btn.textContent = isHidden ? 'Подробнее о проекте' : 'Скрыть подробности';
+        });
+    </script>
+</body>
+</html>
