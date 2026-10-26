@@ -9,6 +9,8 @@ services:
       - "127.0.0.1:${NGINX_PORT:-8080}:80"
     volumes:
       - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+      # Сниппеты, которые подменяет compose.logging.yaml (формат access log)
+      - ./docker/nginx/snippets:/etc/nginx/snippets:ro
       # Тот же код, что и в php, тем же путём — иначе SCRIPT_FILENAME не совпадёт
       - ./app:/var/www/html:ro
     depends_on:
@@ -68,6 +70,11 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      # Пользователь для postgres-exporter (создаётся initdb/02-monitoring.sh).
+      # Нужен здесь, а не в compose.monitoring.yaml: initdb выполняется при самом
+      # первом старте, а он может случиться и без мониторинга
+      POSTGRES_EXPORTER_USER: ${POSTGRES_EXPORTER_USER:-postgres_exporter}
+      POSTGRES_EXPORTER_PASSWORD: ${POSTGRES_EXPORTER_PASSWORD:-exporter_dev_password}
     volumes:
       # В postgres 18 точка монтирования данных — /var/lib/postgresql (без /data),
       # PGDATA по умолчанию указывает на подпапку внутри неё
