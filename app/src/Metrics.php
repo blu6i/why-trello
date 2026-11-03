@@ -57,14 +57,14 @@ final class Metrics
      */
     public static function safely(callable $fn): void
     {
-        if (!self::enabled()) {
+        if (! self::enabled()) {
             return;
         }
 
         try {
             $fn();
         } catch (\Throwable $e) {
-            error_log('metrics: ' . $e->getMessage());
+            error_log('metrics: '.$e->getMessage());
         }
     }
 }

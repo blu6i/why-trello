@@ -11,7 +11,8 @@ endif
 .PHONY: help init build up down ps logs clean composer sh psql pint pint-test \
 	mon-up mon-down mon-ps mon-check mon-reload pg-monitoring \
 	logs-up logs-down \
-	demo-db-down demo-db-up demo-load demo-errors demo-slow
+	demo-db-down demo-db-up demo-load demo-errors demo-slow \
+	cron cron-list cron-logs
 
 # Базовый стек — только compose.yaml. Мониторинг подключается вторым файлом через -f:
 # compose склеивает их в одну модель, сервисы мониторинга попадают в ту же сеть
@@ -49,6 +50,9 @@ help:
 	@echo "make encrypt   — шифрование"
 	@echo "make decrypt   — дешифрование"
 	@echo "make tables_db — таблицы в бд"
+	@echo "make cron      — разовый запуск крон-задач текущей минуты"
+	@echo "make cron-list — просмотр зарегистрированных крон-задач"
+	@echo "make cron-logs — просмотр логов сервиса cron"
 	@echo ""
 	@echo "Мониторинг (Prometheus + экспортеры):"
 	@echo "make mon-up    — поднять базу + мониторинг (cAdvisor: COMPOSE_PROFILES=cadvisor make mon-up)"
@@ -230,3 +234,12 @@ tables_db:
 
 migrate:
 	docker compose exec php php bin/migrate.php
+
+cron:
+	docker compose exec php php bin/cron.php
+
+cron-list:
+	docker compose exec php php bin/cron.php --list
+
+cron-logs:
+	docker compose logs -f cron

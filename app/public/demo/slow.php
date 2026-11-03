@@ -14,7 +14,7 @@ declare(strict_types=1);
  * запросов исчерпает пул.
  */
 
-require __DIR__ . '/../../vendor/autoload.php';
+require __DIR__.'/../../vendor/autoload.php';
 
 use App\Database;
 use App\Log;
@@ -31,7 +31,7 @@ header('Content-Type: application/json; charset=utf-8');
 try {
     $stmt = Database::connect()->prepare('SELECT pg_sleep(:seconds)');
     $stmt->execute(['seconds' => $seconds]);
-} catch (\Throwable $e) {
+} catch (Throwable $e) {
     Log::error('slow query failed', ['error' => $e->getMessage()]);
     http_response_code(503);
     echo json_encode(['status' => 'fail', 'error' => 'database unavailable'], JSON_UNESCAPED_UNICODE);

@@ -23,7 +23,7 @@ $iterations = 0;
 $hash = '';
 
 while (hrtime(true) < $deadline) {
-    $hash = hash('sha256', $hash . $iterations);
+    $hash = hash('sha256', $hash.$iterations);
     $iterations++;
 }
 

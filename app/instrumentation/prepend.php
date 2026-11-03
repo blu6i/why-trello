@@ -24,13 +24,13 @@ if (($_SERVER['SCRIPT_NAME'] ?? '') === '/metrics.php') {
 
 // Без vendor/ (ещё не сделали `make composer`) инструментация молча выключается,
 // а не роняет каждый запрос фатальной ошибкой
-$autoload = __DIR__ . '/../vendor/autoload.php';
-if (!is_file($autoload)) {
+$autoload = __DIR__.'/../vendor/autoload.php';
+if (! is_file($autoload)) {
     return;
 }
 require_once $autoload;
 
-if (!Metrics::enabled()) {
+if (! Metrics::enabled()) {
     return;
 }
 
@@ -56,7 +56,7 @@ register_shutdown_function(static function () use ($appRequestStart): void {
     // Метод тоже приходит от клиента: `curl -X FOOBAR1`, `-X FOOBAR2`... — и вот новые ряды.
     // Всё нестандартное складываем в OTHER
     $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? ''));
-    if (!in_array($method, ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], true)) {
+    if (! in_array($method, ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], true)) {
         $method = 'OTHER';
     }
 
