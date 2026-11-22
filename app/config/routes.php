@@ -2,36 +2,45 @@
 
 declare(strict_types=1);
 
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\HomeController;
+use App\Http\Controllers\FrontendController;
 use App\Http\Request;
 use App\Http\Response;
 use App\Http\Router;
-use App\Models\User;
 
 /** @var Router $router */
-$router->get('/', [HomeController::class, 'index']);
 
-// Маршруты аутентификации
-$router->post('/register', [AuthController::class, 'register']);
-$router->post('/login', [AuthController::class, 'login']);
-$router->post('/logout', [AuthController::class, 'logout']);
+// Главная страница
+$router->get('/', [FrontendController::class, 'indexAction']);
 
-// Для обратной совместимости (если форма отправлена на / с action=login/register/logout)
+// Маршруты аутентификации и регистрации пользователя
+$router->post('/register', [FrontendController::class, 'registerAction']);
+$router->post('/login', [FrontendController::class, 'loginAction']);
+$router->post('/logout', [FrontendController::class, 'logoutAction']);
+
+// Обратная совместимость для форм, отправляющих POST на "/" с полем action
 $router->post('/', function (Request $request): Response {
     $action = $request->input('action');
+    $frontend = new FrontendController;
+
     if ($action === 'register') {
-        return (new AuthController)->register($request);
+        return $frontend->registerAction($request);
     }
     if ($action === 'login') {
-        return (new AuthController)->login($request);
+        return $frontend->loginAction($request);
     }
     if ($action === 'logout') {
-        return (new AuthController)->logout();
+        return $frontend->logoutAction($request);
     }
 
     return Response::redirect('/', 303);
 });
+
+// Маршруты для досок и колонок (согласно спецификации)
+$router->get('/boards', [FrontendController::class, 'boardListAction']);
+$router->post('/boards/create', [FrontendController::class, 'createBoardAction']);
+$router->post('/boards/edit', [FrontendController::class, 'editBoardAction']);
+$router->get('/boards/delete', [FrontendController::class, 'deleteBoardAction']);
+$router->get('/boards/{board_id}/columns', [FrontendController::class, 'boardColumnsAction']);
 
 // Пример группировки REST API с префиксом и параметризованными маршрутами
 $router->group(['prefix' => '/api'], function (Router $api): void {
@@ -43,7 +52,7 @@ $router->group(['prefix' => '/api'], function (Router $api): void {
     });
 
     $api->get('/users/{id}', function (string $id): array {
-        $user = User::find((int) $id);
+        $user = \App\Models\User::find((int) $id);
         if ($user === null) {
             return ['error' => 'User not found'];
         }
