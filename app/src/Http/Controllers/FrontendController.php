@@ -9,6 +9,7 @@ use App\Http\Requests\User\LoginRequest;
 use App\Http\Requests\User\LogoutRequest;
 use App\Http\Requests\User\RegisterRequest;
 use App\Http\Response;
+use App\Http\Responses\ResponseModelInterface;
 use App\Models\ActivityLog;
 use App\Models\Board;
 use App\Security\UserSessionAuth;
@@ -92,7 +93,7 @@ class FrontendController extends AbstractController
         $responseModel = $registerRequest->handle();
 
         if ($request->isJson()) {
-            return $responseModel->toHttpResponse();
+            return $this->apiResponseFromModel($responseModel);
         }
 
         if ($responseModel->isSuccess()) {
@@ -118,7 +119,7 @@ class FrontendController extends AbstractController
         $responseModel = $loginRequest->handle();
 
         if ($request->isJson()) {
-            return $responseModel->toHttpResponse();
+            return $this->apiResponseFromModel($responseModel);
         }
 
         if ($responseModel->isSuccess()) {
@@ -144,10 +145,87 @@ class FrontendController extends AbstractController
         $responseModel = $logoutRequest->handle();
 
         if ($request->isJson()) {
-            return $responseModel->toHttpResponse();
+            return $this->apiResponseFromModel($responseModel);
         }
 
         return $this->redirect('/?logged_out=1', 303);
+    }
+
+    /**
+     * Получение текущего авторизованного пользователя из сессии (для React SPA).
+     *
+     * @param  Request  $request  Входящий HTTP-запрос.
+     * @return Response JSON-конверт с данными пользователя или ошибкой 400 для гостя.
+     */
+    public function userAction(Request $request): Response
+    {
+        $user = $this->userSessionAuth->authorizeFromSession();
+
+        if ($user === null) {
+            return $this->json([
+                'is_successful' => false,
+                'time' => date(DATE_ATOM),
+                'error' => 'Unauthorized',
+            ], 400);
+        }
+
+        return $this->json([
+            'is_successful' => true,
+            'time' => date(DATE_ATOM),
+            'user_id' => $user->user_id,
+            'email' => $user->email,
+            'name' => $user->name,
+            'created_datetime' => (string) $user->created_datetime,
+            'updated_datetime' => $user->updated_datetime !== null ? (string) $user->updated_datetime : null,
+        ]);
+    }
+
+    /**
+     * Преобразование ResponseModelInterface в формат JSON-конверта (is_successful / time) для SPA.
+     *
+     * @param  ResponseModelInterface  $model  Модель ответа после выполнения запроса.
+     * @return Response HTTP JSON-ответ.
+     */
+    private function apiResponseFromModel(ResponseModelInterface $model): Response
+    {
+        if ($model->isSuccess()) {
+            $data = is_array($model->getData()) ? $model->getData() : [];
+            $user = $this->userSessionAuth->authorizeFromSession();
+
+            if ($user !== null && isset($data['user_id'])) {
+                $data['created_datetime'] = (string) $user->created_datetime;
+                $data['updated_datetime'] = $user->updated_datetime !== null ? (string) $user->updated_datetime : null;
+            }
+
+            return $this->json(
+                array_merge([
+                    'is_successful' => true,
+                    'time' => date(DATE_ATOM),
+                ], $data),
+                $model->getStatusCode()
+            );
+        }
+
+        $errors = $model->getErrors();
+        $logicError = is_string($errors['logic'] ?? null) ? $errors['logic'] : $model->getMessage();
+
+        $errorCode = match ($logicError) {
+            'Пользователь с таким Email уже зарегистрирован.' => 'User already exists',
+            'Неверный Email или пароль.' => 'User authorization error',
+            default => $logicError,
+        };
+
+        $payload = [
+            'is_successful' => false,
+            'time' => date(DATE_ATOM),
+            'error' => $errorCode,
+        ];
+
+        if (isset($errors['parameters']) && is_array($errors['parameters']) && count($errors['parameters']) > 0) {
+            $payload['parameter_errors'] = $errors['parameters'];
+        }
+
+        return $this->json($payload, $model->getStatusCode());
     }
 
     // =========================================================================

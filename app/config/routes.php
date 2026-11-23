@@ -44,6 +44,15 @@ $router->get('/boards/{board_id}/columns', [FrontendController::class, 'boardCol
 
 // Пример группировки REST API с префиксом и параметризованными маршрутами
 $router->group(['prefix' => '/api'], function (Router $api): void {
+    // Эндпоинты для React SPA (FrontendController)
+    $api->group(['prefix' => '/frontend'], function (Router $frontendApi): void {
+        $frontendApi->get('/user', [FrontendController::class, 'userAction']);
+        $frontendApi->post('/login', [FrontendController::class, 'loginAction']);
+        $frontendApi->post('/register', [FrontendController::class, 'registerAction']);
+        $frontendApi->get('/logout', [FrontendController::class, 'logoutAction']);
+        $frontendApi->post('/logout', [FrontendController::class, 'logoutAction']);
+    });
+
     $api->get('/health', function (): array {
         return [
             'status' => 'ok',

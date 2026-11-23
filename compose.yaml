@@ -117,5 +117,25 @@ services:
       start_period: 10s
     restart: unless-stopped
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../docker/frontend/Dockerfile
+    image: ${DOCKERHUB_NAMESPACE}/frontend:${IMAGE_TAG}
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-5173}:5173"
+    volumes:
+      - ./frontend:/app/frontend
+      # Анонимный volume сохраняет node_modules из образа, чтобы bind mount ./frontend не затёр его
+      - /app/frontend/node_modules
+      # Монтируем ./app, чтобы `npm run build` внутри контейнера писал сборку в ./app/public/dist
+      - ./app:/app/app
+    environment:
+      VITE_API_TARGET: http://nginx:80
+    depends_on:
+      nginx:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   pgdata:

@@ -4,6 +4,20 @@
 # /composer.lock
 /app/vendor
 
+# React / Vite (frontend)
+/frontend/node_modules/
+/frontend/dist/
+/frontend/dist-ssr/
+/frontend/.vite/
+/frontend/.env.local
+/frontend/.env.*.local
+/app/public/dist/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
 # the fuelphp document
 /docs/
 
