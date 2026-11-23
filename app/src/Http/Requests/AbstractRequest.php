@@ -170,8 +170,6 @@ abstract class AbstractRequest
 
     /**
      * Получение первого текстового сообщения об ошибке.
-     *
-     * @return string|null
      */
     public function getFirstError(): ?string
     {

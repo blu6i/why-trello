@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\Response;
-use App\Models\ActivityLog;
+use App\Security\Csrf;
 use Illuminate\Database\Capsule\Manager as Capsule;
 use Throwable;
 
@@ -15,11 +15,9 @@ final class HomeController extends AbstractController
     {
         $dbVersion = null;
         $dbError = null;
-        $activityLogs = [];
 
         try {
             $dbVersion = (string) Capsule::connection()->selectOne('SELECT version()')->version;
-            $activityLogs = ActivityLog::orderBy('id', 'desc')->take(20)->get();
         } catch (Throwable $e) {
             $dbError = $e->getMessage();
         }
@@ -33,6 +31,7 @@ final class HomeController extends AbstractController
 
         return $this->render('home', [
             'currentUser' => $this->user(),
+            'csrfToken' => Csrf::token(),
             'flashSuccess' => $flashSuccess,
             'flashError' => $flashError,
             'phpVersion' => PHP_VERSION,
@@ -40,7 +39,6 @@ final class HomeController extends AbstractController
             'hostname' => gethostname(),
             'dbVersion' => $dbVersion,
             'dbError' => $dbError,
-            'activityLogs' => $activityLogs,
         ]);
     }
 }

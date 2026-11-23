@@ -8,6 +8,7 @@ use App\Database;
 use App\Http\Request;
 use App\Http\Router;
 use App\Log;
+use App\Security\Csrf;
 use App\Security\SessionManager;
 
 $startTime = microtime(true);
@@ -21,13 +22,12 @@ register_shutdown_function(function () use ($startTime, $request) {
     $status = http_response_code();
     $durationMs = round((microtime(true) - $startTime) * 1000, 2);
 
-    // Логируем в Monolog со всеми деталями
+    // Логируем в Monolog метаданные запроса (без тел ответов и чувствительных данных)
     Log::get()->info("HTTP Request: {$request->getMethod()} {$request->getUri()} -> {$status}", [
         'method' => $request->getMethod(),
         'uri' => $request->getUri(),
         'status' => $status,
         'duration_ms' => $durationMs,
-        'response_body' => $responseBody ?: '(empty body/redirect)',
         'ip' => $request->ip(),
     ]);
 
@@ -38,8 +38,9 @@ register_shutdown_function(function () use ($startTime, $request) {
 // Инициализация соединения с PostgreSQL
 Database::init();
 
-// Инициализация механизма сессий
+// Инициализация механизма сессий и CSRF-токена
 SessionManager::start();
+Csrf::token();
 
 // Создание и конфигурация маршрутизатора
 $router = new Router;

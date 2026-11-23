@@ -43,5 +43,5 @@ export async function register(name: string, email: string, password: string): P
 }
 
 export async function logout(): Promise<void> {
-  await request('/api/frontend/logout')
+  await request('/api/frontend/logout', { method: 'POST' })
 }

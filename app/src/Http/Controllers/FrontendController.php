@@ -10,8 +10,8 @@ use App\Http\Requests\User\LogoutRequest;
 use App\Http\Requests\User\RegisterRequest;
 use App\Http\Response;
 use App\Http\Responses\ResponseModelInterface;
-use App\Models\ActivityLog;
 use App\Models\Board;
+use App\Security\Csrf;
 use App\Security\UserSessionAuth;
 use Illuminate\Database\Capsule\Manager as Capsule;
 use Throwable;
@@ -50,11 +50,9 @@ class FrontendController extends AbstractController
 
         $dbVersion = null;
         $dbError = null;
-        $activityLogs = [];
 
         try {
             $dbVersion = (string) Capsule::connection()->selectOne('SELECT version()')->version;
-            $activityLogs = ActivityLog::orderBy('id', 'desc')->take(20)->get();
         } catch (Throwable $e) {
             $dbError = $e->getMessage();
         }
@@ -68,6 +66,7 @@ class FrontendController extends AbstractController
 
         return $this->render('home', [
             'currentUser' => $currentUser,
+            'csrfToken' => Csrf::token(),
             'flashSuccess' => $flashSuccess,
             'flashError' => $flashError,
             'phpVersion' => PHP_VERSION,
@@ -75,7 +74,6 @@ class FrontendController extends AbstractController
             'hostname' => gethostname(),
             'dbVersion' => $dbVersion,
             'dbError' => $dbError,
-            'activityLogs' => $activityLogs,
         ]);
     }
 
@@ -91,6 +89,10 @@ class FrontendController extends AbstractController
         $registerRequest->setAuth($this->userSessionAuth);
 
         $responseModel = $registerRequest->handle();
+
+        if ($responseModel->isSuccess()) {
+            Csrf::rotate();
+        }
 
         if ($request->isJson()) {
             return $this->apiResponseFromModel($responseModel);
@@ -117,6 +119,10 @@ class FrontendController extends AbstractController
         $loginRequest->setAuth($this->userSessionAuth);
 
         $responseModel = $loginRequest->handle();
+
+        if ($responseModel->isSuccess()) {
+            Csrf::rotate();
+        }
 
         if ($request->isJson()) {
             return $this->apiResponseFromModel($responseModel);
@@ -323,9 +329,9 @@ class FrontendController extends AbstractController
 
     /**
      * Удаление доски.
-     * Спецификация: Get, Authorized.
+     * Спецификация: DELETE, Authorized.
      *
-     * @param  Request  $request  Входящий HTTP-запрос с query-параметром [board_id].
+     * @param  Request  $request  Входящий HTTP-запрос с параметром [board_id].
      * @return Response Результат удаления.
      */
     public function deleteBoardAction(Request $request): Response
@@ -335,7 +341,7 @@ class FrontendController extends AbstractController
             return $this->json(['error' => 'Unauthorized'], 401);
         }
 
-        $boardId = (int) ($request->query('board_id') ?? $request->param('board_id', 0));
+        $boardId = (int) ($request->param('board_id') ?? $request->input('board_id', 0));
         $board = Board::where('board_id', $boardId)
             ->where('owner_user_id', $user->user_id)
             ->first();
@@ -375,7 +381,7 @@ class FrontendController extends AbstractController
             return $this->json(['error' => 'Доска не найдена'], 404);
         }
 
-        $columns = $board->columns()->orderBy('sort_order', 'asc')->get();
+        $columns = $board->columns()->orderBy('ordinal_position', 'asc')->get();
 
         return $this->json([
             'success' => true,

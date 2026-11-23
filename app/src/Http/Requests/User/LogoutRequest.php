@@ -49,8 +49,6 @@ final class LogoutRequest extends AbstractRequest
 
     /**
      * Валидация логики: проверка активности сессии.
-     *
-     * @return bool
      */
     public function validateLogic(): bool
     {
@@ -59,8 +57,6 @@ final class LogoutRequest extends AbstractRequest
 
     /**
      * Выполнение разлогина: уничтожение сессии и очистка куки.
-     *
-     * @return ResponseModelInterface
      */
     public function execute(): ResponseModelInterface
     {

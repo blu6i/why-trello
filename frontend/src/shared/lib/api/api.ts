@@ -2,12 +2,17 @@ import { ApiError } from './ApiError'
 import type { ApiFailure, ApiSuccess } from './types'
 
 type RequestOptions = {
-  method?: 'GET' | 'POST'
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   body?: unknown
 }
 
 type ApiEnvelopeLike = {
   is_successful?: boolean
+}
+
+function getCsrfToken(): string | null {
+  const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/)
+  return match ? decodeURIComponent(match[1]) : null
 }
 
 /**
@@ -18,9 +23,19 @@ export async function request<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<ApiSuccess<T>> {
+  const method = options.method ?? 'GET'
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+
+  if (method !== 'GET') {
+    const csrfToken = getCsrfToken()
+    if (csrfToken) {
+      headers['X-XSRF-TOKEN'] = csrfToken
+    }
+  }
+
   const response = await fetch(path, {
-    method: options.method ?? 'GET',
-    headers: { 'Content-Type': 'application/json' },
+    method,
+    headers,
     // Куку сессии браузер отправит сам — JS её не читает
     credentials: 'include',
     body: options.body === undefined ? undefined : JSON.stringify(options.body),

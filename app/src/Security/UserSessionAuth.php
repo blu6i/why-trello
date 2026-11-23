@@ -139,8 +139,6 @@ class UserSessionAuth implements UserAuthInterface
 
     /**
      * Получение модели текущего пользователя.
-     *
-     * @return User|null
      */
     public function user(): ?User
     {
@@ -149,8 +147,6 @@ class UserSessionAuth implements UserAuthInterface
 
     /**
      * Получение целочисленного ID текущего пользователя из сессии.
-     *
-     * @return int|null
      */
     public function id(): ?int
     {

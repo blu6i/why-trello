@@ -69,6 +69,7 @@
         <div class="auth-bar">
             <?php if ($currentUser !== null) { ?>
                 <form method="POST" action="/logout" style="margin:0;">
+                    <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken ?? '', ENT_QUOTES, 'UTF-8') ?>">
                     <button type="submit" class="btn btn-danger">Выход</button>
                 </form>
             <?php } ?>
@@ -89,6 +90,7 @@
             <div class="card">
                 <h2>Вход</h2>
                 <form method="POST" action="/login">
+                    <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken ?? '', ENT_QUOTES, 'UTF-8') ?>">
                     <div class="form-group">
                         <label for="login-email">Email:</label>
                         <input type="email" id="login-email" name="email" required autocomplete="email">
@@ -104,6 +106,7 @@
             <div class="card">
                 <h2>Регистрация</h2>
                 <form method="POST" action="/register">
+                    <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken ?? '', ENT_QUOTES, 'UTF-8') ?>">
                     <div class="form-group">
                         <label for="reg-name">Имя:</label>
                         <input type="text" id="reg-name" name="name" required autocomplete="name">
@@ -152,39 +155,6 @@
                 <?= $dbError === null ? htmlspecialchars($dbVersion ?? '', ENT_QUOTES, 'UTF-8') : 'ошибка: '.htmlspecialchars($dbError, ENT_QUOTES, 'UTF-8') ?>
             </dd>
         </dl>
-    </div>
-
-    <!-- Журнал аудита базы данных -->
-    <div class="card">
-        <h2>Журнал аудита базы данных (activity_logs)</h2>
-        <?php if (count($activityLogs) > 0) { ?>
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Сущность</th>
-                        <th>Действие</th>
-                        <th>ДО (old_values)</th>
-                        <th>ПОСЛЕ (new_values)</th>
-                        <th>Время</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($activityLogs as $log) { ?>
-                        <tr>
-                            <td><?= htmlspecialchars((string) $log->id, ENT_QUOTES, 'UTF-8') ?></td>
-                            <td><?= htmlspecialchars($log->entity_type.' #'.($log->entity_id ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                            <td><?= htmlspecialchars($log->action, ENT_QUOTES, 'UTF-8') ?></td>
-                            <td><code><?= htmlspecialchars(json_encode($log->old_values, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?: 'null', ENT_QUOTES, 'UTF-8') ?></code></td>
-                            <td><code><?= htmlspecialchars(json_encode($log->new_values, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?: 'null', ENT_QUOTES, 'UTF-8') ?></code></td>
-                            <td><?= htmlspecialchars((string) $log->created_at, ENT_QUOTES, 'UTF-8') ?></td>
-                        </tr>
-                    <?php } ?>
-                </tbody>
-            </table>
-        <?php } else { ?>
-            <p>Записей аудита пока нет.</p>
-        <?php } ?>
     </div>
 
 </body>
